@@ -1,0 +1,49 @@
+/*
+ * Created on Fri Jul 17 2020
+ *
+ * Copyright (c) 2020 Peterson Yuhala, IIUN
+ */
+
+
+/* Enclave.edl - Top EDL file. */
+
+enclave {
+
+    include "user_types.h" /* buffer_t */
+    include "sgx_spinlock.h"
+
+    /* Import all libc ocalls */
+    from "shim-in/io/io.edl" import *;
+    from "shim-in/net/net.edl" import *;
+    from "shim-in/sys/sys.edl" import *;
+    from "shim-in/thread/thread.edl" import *;
+      
+
+
+    from "sgx_tstdc.edl" import *;
+    from "sgx_tswitchless.edl" import *;
+
+  
+
+
+   trusted {
+       
+       
+       public void ecall_run_main(int id);    
+        
+
+   };
+
+    /* 
+     * ocall_print_string - invokes OCALL to display string buffer inside the enclave.
+     *  [in]: copy the string buffer to App outside.
+     *  [string]: specifies 'str' is a NULL terminated buffer.
+     */
+    untrusted {
+    	
+            
+        void ocall_print_string([in, string] const char *str);
+	
+    };
+
+};
