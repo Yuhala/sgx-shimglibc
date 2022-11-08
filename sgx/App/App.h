@@ -50,9 +50,7 @@
 #define ENCLAVE_FILENAME "enclave.signed.so"
 
 extern sgx_enclave_id_t global_eid;     /* global enclave id */
-extern struct buffer switchless_buffer; /* switchless buffer */
-extern void *shim_switchless_functions[];
-extern void *shim_functions[];
+
 
 //#include "graalsgx/graal_sgx_ocalls.h"
 

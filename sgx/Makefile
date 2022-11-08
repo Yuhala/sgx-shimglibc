@@ -105,10 +105,9 @@ SGX_COMMON_CXXFLAGS := $(SGX_COMMON_FLAGS) -Wnon-virtual-dtor -std=c++11
 Common_Path := ./Common
 Shim_Libs := #-lfdlibm -lffi -ljava -ljvm -llibchelper -lnet -lnio -lzip
 
-# Untrusted objects from graal AoT compilation
-ShimLib_Objects_Out := $(wildcard App/shim-out/*.o)
 
-# Graal cpp files
+
+# Shim lib files
 ShimLib_Cpp_Files_In := $(wildcard Enclave/shim-in/*/*.cpp)
 ShimLib_Cpp_FIles_Out := $(wildcard App/shim-out/*/*.cpp)
 
@@ -134,16 +133,13 @@ EncApp_Headers_In := $(wildcard $(EncApp_Src_In)/*.h)
 EncApp_Objs_In := $(EncApp_Cpp_Files_In:.cpp=.o)
 
 
+
+
 # enclave appication libs
 EncApp_Libs := -lpthread -lm
 
 # enclave appication include paths
 EncApp_Inc_Paths := -I$(EncApp_Src_In) 
-
-
-
-
-
 
 
 
@@ -177,7 +173,7 @@ App_Cpp_Flags := $(App_C_Flags)
 
 # Graal needs: -lpthread -ldl -lz -lrt 
 App_Link_Flags := -L$(SGX_LIBRARY_PATH) -L$(Shim_Libs_Path) \
-				-Wl,--whole-archive  -lsgx_uswitchless -Wl,--no-whole-archive \
+				-Wl,--whole-archive -lsgx_uswitchless -Wl,--no-whole-archive \
 				-Wl,--start-group $(Graal_Libs) -Wl,--end-group -l$(Urts_Library_Name) $(EncApp_Libs) -lpthread
 
 
@@ -221,9 +217,9 @@ Enclave_Security_Link_Flags := -Wl,-z,relro,-z,now,-z,noexecstack
 # Do NOT move the libraries linked with `--start-group' and `--end-group' within `--whole-archive' and `--no-whole-archive' options.
 # Otherwise, you may get some undesirable errors.
 Enclave_Link_Flags := $(Enclave_Security_Link_Flags) \
-    -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_LIBRARY_PATH) -L$(Graal_Libs_Path) \
+    -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_LIBRARY_PATH) -L$(Shim_Libs) \
 	-Wl,--whole-archive -lsgx_tswitchless -l$(Trts_Library_Name) -Wl,--no-whole-archive \
-	-Wl,--start-group -lsgx_tstdc -lsgx_tcxx -l$(Crypto_Library_Name) -l$(Service_Library_Name) $(Graal_Libs) -Wl,--end-group \
+	-Wl,--start-group -lsgx_tstdc -lsgx_tcxx -l$(Crypto_Library_Name) -l$(Service_Library_Name) $(Shim_Libs) -Wl,--end-group \
 	-Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
 	-Wl,-pie,-eenclave_entry -Wl,--export-dynamic  \
 	-Wl,--defsym,__ImageBase=0 -Wl,--gc-sections   \
@@ -258,6 +254,7 @@ endif
 
 
 .PHONY: all target run
+
 all: .config_$(Build_Mode)_$(SGX_ARCH)
 	@$(MAKE) target
 
@@ -330,7 +327,7 @@ App/%.o: App/%.cpp  App/Enclave_u.h
 	@$(CXX) $(SGX_COMMON_CXXFLAGS) $(App_Cpp_Flags) -c $< -o $@
 	@echo "CXX  <=  $<"
 
-$(App_Name): App/Enclave_u.o $(App_Cpp_Objects) $(Graal_Objects_Out) $(Memcached_Objs_Out) $(Kyoto_Objs_Out)
+$(App_Name): App/Enclave_u.o $(App_Cpp_Objects) $(Graal_Objects_Out) 
 	@$(CXX) $^ -o $@ $(App_Link_Flags)
 	@echo "LINK =>  $@"
 
@@ -353,9 +350,9 @@ Enclave/%.o: Enclave/%.cpp Enclave/Enclave_t.h
 
 #Enclave/graalsgx.o: $(Graal_Objects_In) Enclave/Enclave.o 
 
-prot: $(Signed_Enclave_Name)
 
-$(Enclave_Name): Enclave/Enclave_t.o  $(Enclave_Cpp_Objects) $(Graal_Objects_In) $(Memcached_Objs_In) $(Kyoto_Objs_In) $(Lmbench_Objs_In) 
+
+$(Enclave_Name): Enclave/Enclave_t.o  $(Enclave_Cpp_Objects) $(EncApp_Objs_In) 
 	@$(CXX) $^ -o $@ $(Enclave_Link_Flags)
 	@echo "LINK =>  $@"
 
